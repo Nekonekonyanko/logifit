@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import { ChevronLeft, ChevronRight, Dumbbell, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
+const ADMIN_EMAIL = "chica.t.1589@gmail.com";
 
 const monthNames = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
                     "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
@@ -26,6 +28,9 @@ const ProgrammingIcon = () => (
 
 export default function DailyLogApp() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.email === ADMIN_EMAIL;
+
   const [curr, setCurr] = useState(new Date(2026, 0, 1));
   const [logs, setLogs] = useState<Record<string, any>>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -123,11 +128,15 @@ export default function DailyLogApp() {
   };
 
   const handleDateClick = (key: string) => {
-  setSelectedDate(key);
-  const log = logs[key];
-  if (log) generateAiComment(log, key);
-  else setAiComment('');
-};
+    if (isMobile && isAdmin) {
+      router.push(`/log?date=${key}`);
+      return;
+    }
+    setSelectedDate(key);
+    const log = logs[key];
+    if (log) generateAiComment(log, key);
+    else setAiComment('');
+  };
 
   const selectedLog = selectedDate ? logs[selectedDate] : null;
   const selectedDayOfWeek = selectedDate
@@ -142,23 +151,41 @@ export default function DailyLogApp() {
     <div style={{ background: '#daedf6', minHeight: '100vh', fontFamily: "'DM Sans', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
 
+      {/* ヘッダー */}
       <div style={{ background: 'white', padding: `24px ${padding} 28px`, borderBottom: '1.5px solid #1a1a2e' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1 style={{ fontSize: headerFontSize, fontWeight: 800, color: '#1a1a2e', letterSpacing: -1, lineHeight: 1 }}>
             {monthNames[month]} <span style={{ color: '#6bb8d4' }}>{year}</span>
           </h1>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button onClick={() => changeMonth(-1)} style={{ padding: isMobile ? 8 : 10, background: 'white', border: '1.5px solid #1a1a2e', borderRadius: '50%', cursor: 'pointer', display: 'flex' }}>
               <ChevronLeft size={isMobile ? 16 : 20} />
             </button>
             <button onClick={() => changeMonth(1)} style={{ padding: isMobile ? 8 : 10, background: 'white', border: '1.5px solid #1a1a2e', borderRadius: '50%', cursor: 'pointer', display: 'flex' }}>
               <ChevronRight size={isMobile ? 16 : 20} />
             </button>
+            {session ? (
+              <button onClick={() => signOut()} style={{
+                padding: '8px 14px', background: '#1a1a2e', color: 'white',
+                border: 'none', borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: 600
+              }}>
+                ログアウト
+              </button>
+            ) : (
+              <button onClick={() => signIn('google')} style={{
+                padding: '8px 14px', background: '#daedf6', color: '#1a1a2e',
+                border: '1.5px solid #1a1a2e', borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: 600
+              }}>
+                ログイン
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: `16px ${padding}` }}>
+
+        {/* カレンダー */}
         <div style={{ border: '1.5px solid #1a1a2e', borderRadius: isMobile ? 12 : 20, overflow: 'hidden', background: '#daedf6', marginBottom: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1.5px solid #1a1a2e' }}>
             {dayNames.map(d => (
@@ -212,6 +239,7 @@ export default function DailyLogApp() {
           </div>
         </div>
 
+        {/* サマリー・詳細 */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 24 }}>
           <div style={{ border: '1.5px solid #1a1a2e', borderRadius: 20, background: 'white', padding: 24 }}>
             <h3 style={{ fontSize: 12, fontWeight: 700, color: '#6b8fa3', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
@@ -241,10 +269,12 @@ export default function DailyLogApp() {
                   <h3 style={{ fontSize: 12, fontWeight: 700, color: '#6b8fa3', letterSpacing: 1.5, textTransform: 'uppercase' }}>
                     {selectedDate} ({fullDayNames[selectedDayOfWeek]})
                   </h3>
-                  <button onClick={() => router.push(`/log?date=${selectedDate}`)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, color: '#6b8fa3', fontSize: 12 }}>
-                    <ExternalLink size={14} /> 記録を編集
-                  </button>
+                  {isAdmin && (
+                    <button onClick={() => router.push(`/log?date=${selectedDate}`)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, color: '#6b8fa3', fontSize: 12 }}>
+                      <ExternalLink size={14} /> 記録を編集
+                    </button>
+                  )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
                   {selectedLog.mood && <div>気分: <strong>{selectedLog.mood}</strong></div>}
@@ -257,10 +287,12 @@ export default function DailyLogApp() {
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <h3 style={{ fontSize: 12, fontWeight: 700, color: '#6b8fa3', letterSpacing: 1.5, textTransform: 'uppercase' }}>{selectedDate}</h3>
-                  <button onClick={() => router.push(`/log?date=${selectedDate}`)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, color: '#6bb8d4', fontSize: 12, fontWeight: 600 }}>
-                    <ExternalLink size={14} /> 記録を追加
-                  </button>
+                  {isAdmin && (
+                    <button onClick={() => router.push(`/log?date=${selectedDate}`)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, color: '#6bb8d4', fontSize: 12, fontWeight: 600 }}>
+                      <ExternalLink size={14} /> 記録を追加
+                    </button>
+                  )}
                 </div>
                 <p style={{ color: '#c0cdd5', fontSize: 13 }}>まだ記録がありません</p>
               </>
@@ -270,6 +302,7 @@ export default function DailyLogApp() {
           </div>
         </div>
 
+        {/* AIコーチ */}
         {selectedDate && (
           <div style={{ border: '1.5px solid #1a1a2e', borderRadius: 20, background: '#1a1a2e', padding: 24 }}>
             <h3 style={{ fontSize: 12, fontWeight: 700, color: '#6bb8d4', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 12 }}>AI Coach</h3>
