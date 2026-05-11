@@ -4,44 +4,6 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 
-const workoutPlan: Record<number, { name: string; sets: number; reps: string }[]> = {
-  1: [
-    { name: 'Stomach', sets: 3, reps: '20 Reps' },
-    { name: 'Reverse Crunch', sets: 3, reps: '15 Reps' },
-    { name: 'Crunch Machine', sets: 3, reps: '25 Reps' },
-  ],
-  2: [
-    { name: 'Air Bikes', sets: 3, reps: '20 Reps' },
-    { name: 'Arm Pulley', sets: 3, reps: '20 Reps' },
-    { name: 'Heel Touches', sets: 3, reps: '20 Reps' },
-  ],
-  3: [
-    { name: 'Crunches', sets: 3, reps: '10 Reps' },
-    { name: 'Plank', sets: 3, reps: '30 Reps' },
-    { name: 'Side Crunches', sets: 3, reps: '30 Reps' },
-  ],
-  4: [
-    { name: 'Leg Raise', sets: 3, reps: '20 Reps' },
-    { name: 'Pikes', sets: 3, reps: '20 Reps' },
-    { name: 'Cable Crunches', sets: 3, reps: '20 Reps' },
-  ],
-  5: [
-    { name: 'Leg Raise', sets: 3, reps: '40 Reps' },
-    { name: 'Pikes', sets: 3, reps: '10 Reps' },
-    { name: 'Cable Crunches', sets: 3, reps: '10 Reps' },
-  ],
-  6: [
-    { name: 'Stomach', sets: 3, reps: '20 Reps' },
-    { name: 'Heel Touches', sets: 3, reps: '20 Reps' },
-    { name: 'Crunches', sets: 3, reps: '10 Reps' },
-  ],
-  0: [
-    { name: 'Leg Raise', sets: 3, reps: '20 Reps' },
-    { name: 'Crunches', sets: 3, reps: '10 Reps' },
-    { name: 'Pikes', sets: 3, reps: '10 Reps' },
-  ],
-};
-
 const moods = [
   { label: 'Great', value: 'Great',
     svg: <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="#1a1a2e" strokeWidth="1.8"/><circle cx="13" cy="15" r="1.8" fill="#1a1a2e"/><circle cx="23" cy="15" r="1.8" fill="#1a1a2e"/><path d="M11 21c1.5 3.5 12.5 3.5 14 0" stroke="#1a1a2e" strokeWidth="1.8" strokeLinecap="round"/></svg>
@@ -60,21 +22,39 @@ const moods = [
   },
 ];
 
+const bodyParts = ['Legs', 'Back', 'Chest', 'Shoulders', 'Arms', 'Core'];
+
+const workoutTypes = [
+  { id: 'workout', label: 'Workout', hasParts: true },
+  { id: 'stretch', label: 'Stretch', hasParts: true },
+  { id: 'pool', label: 'プール', hasParts: false,
+    options: [{ label: '距離', key: 'distance', choices: ['0.5km', '1km', '1.5km', '2km', '2.5km', '3km'] }] },
+  { id: 'walking', label: 'ウォーキング', hasParts: false,
+    options: [
+      { label: '傾斜', key: 'incline', choices: ['0度', '3度', '5度', '7度', '10度', '12度', '15度'] },
+      { label: '時間', key: 'duration', choices: ['10分', '20分', '30分', '40分', '50分', '60分', '90分'] },
+      { label: '距離', key: 'distance', choices: ['1km', '2km', '3km', '4km', '5km', '6km', '7km', '8km', '10km'] },
+    ]},
+  { id: 'running', label: 'ランニング', hasParts: false,
+    options: [
+      { label: '時間', key: 'duration', choices: ['10分', '20分', '30分', '40分', '50分', '60分', '90分'] },
+      { label: '距離', key: 'distance', choices: ['1km', '2km', '3km', '4km', '5km', '6km', '7km', '8km', '10km'] },
+    ]},
+  { id: 'yoga', label: 'ヨガ', hasParts: false,
+    options: [{ label: '時間', key: 'duration', choices: ['10分', '20分', '30分', '40分', '50分', '60分', '90分'] }]},
+  { id: 'spa', label: 'スパ', hasParts: false, options: [] },
+];
+
 const workoutTimes = ['30分', '1時間', '1時間半', '2時間'];
 
 function LogContent() {
   const params = useSearchParams();
   const date = params.get("date");
-
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const dayOfWeek = date
     ? (() => { const [y, m, d] = date.split('-').map(Number); return new Date(y, m - 1, d).getDay(); })()
     : new Date().getDay();
 
-  const menu = workoutPlan[dayOfWeek] ?? [];
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-  const [checked, setChecked] = useState<boolean[]>(menu.map(() => false));
-  const [workoutTime, setWorkoutTime] = useState<string | null>(null);
   const [progTime, setProgTime] = useState('');
   const [progContent, setProgContent] = useState('');
   const [progMemo, setProgMemo] = useState('');
@@ -82,39 +62,61 @@ function LogContent() {
   const [mood, setMood] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [workoutTime, setWorkoutTime] = useState<string | null>(null);
+  const [alcohol, setAlcohol] = useState(false);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedParts, setSelectedParts] = useState<Record<string, string[]>>({});
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, Record<string, string>>>({});
 
   useEffect(() => {
-  if (!date) { setLoading(false); return; }
-  const fetchLog = async () => {
-    const { data } = await supabase
-      .from('logs')
-      .select('*')
-      .eq('date', date)
-      .single();
-
-    if (data) {
-      setMood(data.mood ?? null);
-      setProgTime(data.prog_time?.toString() ?? '');
-      setProgContent(data.prog_content ?? '');
-      setProgMemo(data.prog_memo ?? '');
-      setEngTime(data.eng_time?.toString() ?? '');
-      setWorkoutTime(data.workout_time ?? null);
-      if (data.gym_menu) {
-        setChecked(data.gym_menu.map((ex: any) => ex.done ?? false));
+    if (!date) { setLoading(false); return; }
+    const fetchLog = async () => {
+      const { data } = await supabase.from('logs').select('*').eq('date', date).single();
+      if (data) {
+        setMood(data.mood ?? null);
+        setProgTime(data.prog_time?.toString() ?? '');
+        setProgContent(data.prog_content ?? '');
+        setProgMemo(data.prog_memo ?? '');
+        setEngTime(data.eng_time?.toString() ?? '');
+        setWorkoutTime(data.workout_time ?? null);
+        setAlcohol(data.alcohol ?? false);
+        if (data.workout_types) {
+          setSelectedTypes(data.workout_types.types ?? []);
+          setSelectedParts(data.workout_types.parts ?? {});
+          setSelectedOptions(data.workout_types.options ?? {});
+        }
       }
-    }
-    setLoading(false);
-  };
-  fetchLog();
-}, [date]);
+      setLoading(false);
+    };
+    fetchLog();
+  }, [date]);
 
-  const allDone = checked.length > 0 && checked.every(Boolean);
-  const toggle = (i: number) => setChecked(prev => prev.map((v, idx) => idx === i ? !v : v));
+  const toggleType = (id: string) => {
+    setSelectedTypes(prev =>
+      prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
+    );
+  };
+
+  const togglePart = (typeId: string, part: string) => {
+    setSelectedParts(prev => {
+      const current = prev[typeId] ?? [];
+      return {
+        ...prev,
+        [typeId]: current.includes(part) ? current.filter(p => p !== part) : [...current, part]
+      };
+    });
+  };
+
+  const setOption = (typeId: string, key: string, value: string) => {
+    setSelectedOptions(prev => ({
+      ...prev,
+      [typeId]: { ...(prev[typeId] ?? {}), [key]: value }
+    }));
+  };
 
   const saveLog = async () => {
     if (!date) return;
     setSaving(true);
-
     const data = {
       date,
       mood,
@@ -122,26 +124,15 @@ function LogContent() {
       prog_content: progContent || null,
       prog_memo: progMemo || null,
       eng_time: engTime ? parseFloat(engTime) : null,
-      gym: allDone,
+      gym: selectedTypes.length > 0,
       workout_time: workoutTime,
-      gym_menu: menu.map((ex, i) => ({ ...ex, done: checked[i] })),
+      workout_types: { types: selectedTypes, parts: selectedParts, options: selectedOptions },
+      alcohol,
     };
-
-    const { error } = await supabase
-      .from('logs')
-      .upsert(data, { onConflict: 'date' });
-
+    const { error } = await supabase.from('logs').upsert(data, { onConflict: 'date' });
     if (error) {
       alert('保存に失敗しました: ' + error.message);
     } else {
-      localStorage.setItem(date, JSON.stringify({
-        gym: allDone,
-        workoutTime,
-        gymMenu: menu.map((ex, i) => ({ ...ex, done: checked[i] })),
-        programming: { time: progTime, content: progContent, memo: progMemo },
-        english: { time: engTime },
-        mood,
-      }));
       alert('保存したよ！');
     }
     setSaving(false);
@@ -153,6 +144,8 @@ function LogContent() {
     fontSize: 14, outline: 'none', boxSizing: 'border-box',
     fontFamily: "'DM Sans', sans-serif",
   };
+
+  if (loading) return <div style={{ padding: 24, fontFamily: "'DM Sans', sans-serif" }}>読み込み中...</div>;
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: '#daedf6', minHeight: '100vh', padding: '24px 16px' }}>
@@ -173,7 +166,7 @@ function LogContent() {
                 border: mood === m.value ? '2px solid #6bb8d4' : '2px solid transparent',
                 borderRadius: 16, padding: '10px 12px', cursor: 'pointer', transition: 'all 0.2s',
               }}>
-                <div style={{ opacity: mood === m.value ? 1 : 0.4, transition: 'opacity 0.2s' }}>{m.svg}</div>
+                <div style={{ opacity: mood === m.value ? 1 : 0.4 }}>{m.svg}</div>
                 <span style={{ fontSize: 11, color: '#6b8fa3', fontWeight: 600 }}>{m.label}</span>
               </button>
             ))}
@@ -220,39 +213,104 @@ function LogContent() {
             <div style={{ width: 4, height: 20, background: '#00d0ca', borderRadius: 4 }}></div>
             <h2 style={{ fontSize: 12, fontWeight: 700, color: '#00a89e', letterSpacing: 1.5, textTransform: 'uppercase' }}>Workout</h2>
           </div>
-          <p style={{ fontSize: 12, color: '#00a89e', fontWeight: 600, marginBottom: 8 }}>運動時間</p>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-            {workoutTimes.map(t => (
-              <button key={t} onClick={() => setWorkoutTime(t)} style={{
-                padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                border: workoutTime === t ? '2px solid #00d0ca' : '2px solid #c0ede9',
-                background: workoutTime === t ? '#00d0ca' : 'white',
-                color: workoutTime === t ? 'white' : '#00a89e',
-                transition: 'all 0.2s',
-              }}>{t}</button>
-            ))}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {menu.map((ex, i) => (
-              <div key={i} onClick={() => toggle(i)} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: checked[i] ? '#b2f0ec' : 'white',
-                borderRadius: 12, padding: '12px 16px', cursor: 'pointer',
-                border: `1.5px solid ${checked[i] ? '#00d0ca' : '#c0ede9'}`,
-                transition: 'all 0.2s',
-              }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: checked[i] ? '#007a76' : '#2d3748', textDecoration: checked[i] ? 'line-through' : 'none' }}>
-                  {checked[i] ? '✅ ' : '⬜ '}{ex.name}
-                </span>
-                <span style={{ fontSize: 13, color: '#6b8fa3' }}>{ex.sets} × {ex.reps}</span>
+          <p style={{ fontSize: 12, color: '#00a89e', fontWeight: 600, marginBottom: 10 }}>今日は何をしますか？</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {workoutTypes.map(type => (
+              <div key={type.id}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => toggleType(type.id)}
+                    style={{
+                      padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      border: selectedTypes.includes(type.id) ? '2px solid #00d0ca' : '2px solid #c0ede9',
+                      background: selectedTypes.includes(type.id) ? '#00d0ca' : 'white',
+                      color: selectedTypes.includes(type.id) ? 'white' : '#00a89e',
+                      transition: 'all 0.2s', whiteSpace: 'nowrap',
+                    }}
+                  >{type.label}</button>
+
+                  {type.hasParts && selectedTypes.includes(type.id) && (
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                      {bodyParts.map(part => (
+                        <button key={part} onClick={() => togglePart(type.id, part)} style={{
+                          padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                          border: (selectedParts[type.id] ?? []).includes(part) ? '2px solid #00d0ca' : '2px solid #c0ede9',
+                          background: (selectedParts[type.id] ?? []).includes(part) ? '#00d0ca' : 'white',
+                          color: (selectedParts[type.id] ?? []).includes(part) ? 'white' : '#00a89e',
+                          transition: 'all 0.2s',
+                        }}>{part}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {!type.hasParts && type.options && type.options.length > 0 && selectedTypes.includes(type.id) && (
+                  <div style={{ marginTop: 8, marginLeft: 8, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    {type.options.map(opt => (
+                      <div key={opt.key}>
+                        <label style={{ fontSize: 11, color: '#00a89e', fontWeight: 600, display: 'block', marginBottom: 4 }}>{opt.label}</label>
+                        <select
+                          value={(selectedOptions[type.id] ?? {})[opt.key] ?? ''}
+                          onChange={e => setOption(type.id, opt.key, e.target.value)}
+                          style={{ padding: '6px 10px', borderRadius: 10, border: '1.5px solid #c0ede9', fontSize: 12, background: 'white', color: '#1a1a2e', outline: 'none' }}
+                        >
+                          <option value="">選択</option>
+                          {opt.choices.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
-          {allDone && (
-            <div style={{ marginTop: 12, background: '#00d0ca', color: 'white', borderRadius: 12, padding: 10, textAlign: 'center', fontWeight: 700, fontSize: 14 }}>
-              🎉 全メニュー完了！
+
+          {selectedTypes.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <p style={{ fontSize: 12, color: '#00a89e', fontWeight: 600, marginBottom: 8 }}>運動時間</p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {workoutTimes.map(t => (
+                  <button key={t} onClick={() => setWorkoutTime(t)} style={{
+                    padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    border: workoutTime === t ? '2px solid #00d0ca' : '2px solid #c0ede9',
+                    background: workoutTime === t ? '#00d0ca' : 'white',
+                    color: workoutTime === t ? 'white' : '#00a89e',
+                    transition: 'all 0.2s',
+                  }}>{t}</button>
+                ))}
+              </div>
             </div>
           )}
+        </div>
+
+        {/* Alcohol */}
+        <div style={{ background: 'white', borderRadius: 20, padding: 20, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 12, fontWeight: 700, color: '#6b8fa3', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Alcohol</h2>
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+            <button onClick={() => setAlcohol(true)} style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+              background: alcohol ? '#daedf6' : 'transparent',
+              border: alcohol ? '2px solid #6bb8d4' : '2px solid transparent',
+              borderRadius: 16, padding: '10px 20px', cursor: 'pointer', transition: 'all 0.2s',
+            }}>
+              <img src="/beer.png" width={36} height={36} alt="beer" style={{ opacity: alcohol ? 1 : 0.3 }} />
+              <span style={{ fontSize: 11, color: '#6b8fa3', fontWeight: 600 }}>飲んだ</span>
+            </button>
+            <button onClick={() => setAlcohol(false)} style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+              background: !alcohol ? '#daedf6' : 'transparent',
+              border: !alcohol ? '2px solid #6bb8d4' : '2px solid transparent',
+              borderRadius: 16, padding: '10px 20px', cursor: 'pointer', transition: 'all 0.2s',
+            }}>
+              <div style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <img src="/beer.png" width={36} height={36} alt="no beer" style={{ opacity: 0.2 }} />
+                <svg style={{ position: 'absolute' }} width="36" height="36" viewBox="0 0 36 36" fill="none">
+                  <line x1="6" y1="6" x2="30" y2="30" stroke="#1a1a2e" strokeWidth="2.5" strokeLinecap="round" opacity="0.5"/>
+                </svg>
+              </div>
+              <span style={{ fontSize: 11, color: '#6b8fa3', fontWeight: 600 }}>飲まなかった</span>
+            </button>
+          </div>
         </div>
 
         <button onClick={saveLog} disabled={saving} style={{

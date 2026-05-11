@@ -31,7 +31,7 @@ export default function DailyLogApp() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.email === ADMIN_EMAIL;
 
-  const [curr, setCurr] = useState(new Date(2026, 0, 1));
+  const [curr, setCurr] = useState(new Date());
   const [logs, setLogs] = useState<Record<string, any>>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [aiComment, setAiComment] = useState<string>('');
@@ -65,10 +65,10 @@ export default function DailyLogApp() {
           loaded[row.date] = {
             gym: row.gym,
             workoutTime: row.workout_time,
-            gymMenu: row.gym_menu,
             programming: { time: row.prog_time, content: row.prog_content, memo: row.prog_memo },
             english: { time: row.eng_time },
             mood: row.mood,
+            alcohol: row.alcohol,
           };
         });
         setLogs(loaded);
@@ -81,7 +81,7 @@ export default function DailyLogApp() {
 
   const changeMonth = (diff: number) => {
     const next = new Date(year, month + diff, 1);
-    if (next >= new Date(2026, 0, 1) && next <= new Date(2027, 11, 1)) setCurr(next);
+    setCurr(next);
   };
 
   const cells: { day: number; current: boolean }[] = [];
@@ -111,7 +111,8 @@ export default function DailyLogApp() {
 気分: ${log.mood ?? 'なし'}
 プログラミング学習: ${log.programming?.time ?? 0}時間、内容: ${log.programming?.content ?? 'なし'}
 英語学習: ${log.english?.time ?? 0}時間
-ジム: ${log.gym ? '全メニュー完了' : '未完了'}、運動時間: ${log.workoutTime ?? 'なし'}
+ジム: ${log.gym ? '完了' : '未完了'}、運動時間: ${log.workoutTime ?? 'なし'}
+お酒: ${log.alcohol ? '飲んだ' : '飲まなかった'}
       `.trim();
 
       const res = await fetch('/api/ai-comment', {
@@ -146,12 +147,12 @@ export default function DailyLogApp() {
   const cellHeight = isMobile ? 52 : 110;
   const headerFontSize = isMobile ? 28 : 56;
   const padding = isMobile ? '16px' : '32px';
+  const today = new Date();
 
   return (
     <div style={{ background: '#daedf6', minHeight: '100vh', fontFamily: "'DM Sans', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
 
-      {/* ヘッダー */}
       <div style={{ background: 'white', padding: `24px ${padding} 28px`, borderBottom: '1.5px solid #1a1a2e' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1 style={{ fontSize: headerFontSize, fontWeight: 800, color: '#1a1a2e', letterSpacing: -1, lineHeight: 1 }}>
@@ -168,24 +169,18 @@ export default function DailyLogApp() {
               <button onClick={() => signOut()} style={{
                 padding: '8px 14px', background: '#1a1a2e', color: 'white',
                 border: 'none', borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: 600
-              }}>
-                ログアウト
-              </button>
+              }}>ログアウト</button>
             ) : (
               <button onClick={() => signIn('google')} style={{
                 padding: '8px 14px', background: '#daedf6', color: '#1a1a2e',
                 border: '1.5px solid #1a1a2e', borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: 600
-              }}>
-                ログイン
-              </button>
+              }}>ログイン</button>
             )}
           </div>
         </div>
       </div>
 
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: `16px ${padding}` }}>
-
-        {/* カレンダー */}
         <div style={{ border: '1.5px solid #1a1a2e', borderRadius: isMobile ? 12 : 20, overflow: 'hidden', background: '#daedf6', marginBottom: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1.5px solid #1a1a2e' }}>
             {dayNames.map(d => (
@@ -199,13 +194,17 @@ export default function DailyLogApp() {
               const isLastRow = i >= cells.length - 7;
               const isLastCol = (i + 1) % 7 === 0;
               const isSelected = selectedDate === key;
+              const isToday = cell.current &&
+                cell.day === today.getDate() &&
+                month === today.getMonth() &&
+                year === today.getFullYear();
 
               return (
                 <div
                   key={i}
                   onClick={() => cell.current && handleDateClick(key)}
                   style={{
-                    background: isSelected ? '#b8dff0' : 'white',
+                    background: isSelected ? '#b8dff0' : isToday ? '#f0f9f8' : 'white',
                     minHeight: cellHeight,
                     padding: isMobile ? '6px 4px' : '10px',
                     display: 'flex',
@@ -216,14 +215,20 @@ export default function DailyLogApp() {
                     WebkitTapHighlightColor: 'transparent',
                   }}
                 >
-                  <span style={{ fontSize: isMobile ? 11 : 14, fontWeight: 700, alignSelf: 'flex-end', color: cell.current ? '#1a1a2e' : '#c0cdd5' }}>
+                  <span style={{
+                    fontSize: isMobile ? 11 : 14,
+                    fontWeight: isToday ? 800 : 700,
+                    alignSelf: 'flex-end',
+                    color: isToday ? '#00d0ca' : cell.current ? '#1a1a2e' : '#c0cdd5'
+                  }}>
                     {cell.day}
                   </span>
                   {cell.current && !isMobile && (
-                    <div style={{ marginTop: 'auto', display: 'flex', gap: 4 }}>
+                    <div style={{ marginTop: 'auto', display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                       {log?.programming?.time && <ProgrammingIcon />}
                       {log?.english?.time && <EnglishIcon />}
                       {log?.gym && <Dumbbell size={12} color="#00d0ca" />}
+                      {log?.alcohol && <img src="/beer.png" width={12} height={12} alt="beer" />}
                     </div>
                   )}
                   {cell.current && isMobile && (
@@ -231,6 +236,7 @@ export default function DailyLogApp() {
                       {log?.programming?.time && <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#ff7ea4' }} />}
                       {log?.english?.time && <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#fece5b' }} />}
                       {log?.gym && <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#00d0ca' }} />}
+                      {log?.alcohol && <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#ffa000' }} />}
                     </div>
                   )}
                 </div>
@@ -239,7 +245,6 @@ export default function DailyLogApp() {
           </div>
         </div>
 
-        {/* サマリー・詳細 */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 24 }}>
           <div style={{ border: '1.5px solid #1a1a2e', borderRadius: 20, background: 'white', padding: 24 }}>
             <h3 style={{ fontSize: 12, fontWeight: 700, color: '#6b8fa3', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
@@ -280,7 +285,8 @@ export default function DailyLogApp() {
                   {selectedLog.mood && <div>気分: <strong>{selectedLog.mood}</strong></div>}
                   {selectedLog.programming?.time && <div style={{ color: '#ff7ea4' }}>💻 プログラミング {selectedLog.programming.time}h — {selectedLog.programming.content}</div>}
                   {selectedLog.english?.time && <div style={{ color: '#d4a017' }}>📚 英語 {selectedLog.english.time}h</div>}
-                  {selectedLog.workoutTime && <div style={{ color: '#00a89e' }}>💪 運動 {selectedLog.workoutTime} {selectedLog.gym ? '✅ 全完了' : ''}</div>}
+                  {selectedLog.workoutTime && <div style={{ color: '#00a89e' }}>💪 運動 {selectedLog.workoutTime}</div>}
+                  {selectedLog.alcohol && <div style={{ color: '#ffa000' }}>🍺 飲んだ</div>}
                 </div>
               </>
             ) : selectedDate ? (
@@ -302,7 +308,6 @@ export default function DailyLogApp() {
           </div>
         </div>
 
-        {/* AIコーチ */}
         {selectedDate && (
           <div style={{ border: '1.5px solid #1a1a2e', borderRadius: 20, background: '#1a1a2e', padding: 24 }}>
             <h3 style={{ fontSize: 12, fontWeight: 700, color: '#6bb8d4', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 12 }}>AI Coach</h3>
