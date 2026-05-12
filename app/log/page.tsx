@@ -270,7 +270,7 @@ function LogContent() {
               <p style={{ fontSize: 12, color: '#00a89e', fontWeight: 600, marginBottom: 8 }}>運動時間</p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {workoutTimes.map(t => (
-                  <button key={t} onClick={() => setWorkoutTime(t)} style={{
+                  <button key={t} onClick={() => setWorkoutTime(workoutTime === t ? null : t)} style={{
                     padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer',
                     border: workoutTime === t ? '2px solid #00d0ca' : '2px solid #c0ede9',
                     background: workoutTime === t ? '#00d0ca' : 'white',
