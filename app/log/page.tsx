@@ -59,11 +59,14 @@ function LogContent() {
   const [progContent, setProgContent] = useState('');
   const [progMemo, setProgMemo] = useState('');
   const [engTime, setEngTime] = useState('');
+  const [engContent, setEngContent] = useState('');
   const [mood, setMood] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [workoutTime, setWorkoutTime] = useState<string | null>(null);
   const [alcohol, setAlcohol] = useState(false);
+  const [weight, setWeight] = useState('53.0');
+  const [bodyFat, setBodyFat] = useState('30.0');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedParts, setSelectedParts] = useState<Record<string, string[]>>({});
   const [selectedOptions, setSelectedOptions] = useState<Record<string, Record<string, string>>>({});
@@ -78,8 +81,11 @@ function LogContent() {
         setProgContent(data.prog_content ?? '');
         setProgMemo(data.prog_memo ?? '');
         setEngTime(data.eng_time?.toString() ?? '');
+        setEngContent(data.eng_content ?? '');
         setWorkoutTime(data.workout_time ?? null);
         setAlcohol(data.alcohol ?? false);
+        setWeight(data.weight?.toString() ?? '');
+        setBodyFat(data.body_fat?.toString() ?? '');
         if (data.workout_types) {
           setSelectedTypes(data.workout_types.types ?? []);
           setSelectedParts(data.workout_types.parts ?? {});
@@ -124,10 +130,13 @@ function LogContent() {
       prog_content: progContent || null,
       prog_memo: progMemo || null,
       eng_time: engTime ? parseFloat(engTime) : null,
+      eng_content: engContent || null,
       gym: selectedTypes.length > 0,
       workout_time: workoutTime,
       workout_types: { types: selectedTypes, parts: selectedParts, options: selectedOptions },
       alcohol,
+      weight: weight ? parseFloat(weight) : null,
+      body_fat: bodyFat ? parseFloat(bodyFat) : null,
     };
     const { error } = await supabase.from('logs').upsert(data, { onConflict: 'date' });
     if (error) {
@@ -182,7 +191,7 @@ function LogContent() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
               <label style={{ fontSize: 12, color: '#c45c80', fontWeight: 600, display: 'block', marginBottom: 4 }}>学習時間（時間）</label>
-              <input type="number" value={progTime} onChange={e => setProgTime(e.target.value)} placeholder="例: 2" style={{ ...inputStyle, border: '1.5px solid #ffc0d8' }} />
+              <input type="number" value={progTime} onChange={e => setProgTime(e.target.value)} placeholder="例: 2" min="0" style={{ ...inputStyle, border: '1.5px solid #ffc0d8' }} />
             </div>
             <div>
               <label style={{ fontSize: 12, color: '#c45c80', fontWeight: 600, display: 'block', marginBottom: 4 }}>学習内容</label>
@@ -202,9 +211,18 @@ function LogContent() {
             <div style={{ width: 4, height: 20, background: '#fece5b', borderRadius: 4 }}></div>
             <h2 style={{ fontSize: 12, fontWeight: 700, color: '#d4a017', letterSpacing: 1.5, textTransform: 'uppercase' }}>English</h2>
           </div>
-          <label style={{ fontSize: 12, color: '#b8860b', fontWeight: 600, display: 'block', marginBottom: 4 }}>学習時間（時間）</label>
-          <input type="number" value={engTime} onChange={e => setEngTime(e.target.value)} placeholder="例: 1"
-            style={{ ...inputStyle, border: '1.5px solid #fce0a0' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div>
+              <label style={{ fontSize: 12, color: '#b8860b', fontWeight: 600, display: 'block', marginBottom: 4 }}>学習時間（時間）</label>
+              <input type="number" value={engTime} onChange={e => setEngTime(e.target.value)} placeholder="例: 1" min="0"
+                style={{ ...inputStyle, border: '1.5px solid #fce0a0' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, color: '#b8860b', fontWeight: 600, display: 'block', marginBottom: 4 }}>学習内容</label>
+              <input type="text" value={engContent} onChange={e => setEngContent(e.target.value)} placeholder="例: 単語・リスニング・スピーキング"
+                style={{ ...inputStyle, border: '1.5px solid #fce0a0' }} />
+            </div>
+          </div>
         </div>
 
         {/* Workout */}
@@ -218,16 +236,13 @@ function LogContent() {
             {workoutTypes.map(type => (
               <div key={type.id}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => toggleType(type.id)}
-                    style={{
-                      padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                      border: selectedTypes.includes(type.id) ? '2px solid #00d0ca' : '2px solid #c0ede9',
-                      background: selectedTypes.includes(type.id) ? '#00d0ca' : 'white',
-                      color: selectedTypes.includes(type.id) ? 'white' : '#00a89e',
-                      transition: 'all 0.2s', whiteSpace: 'nowrap',
-                    }}
-                  >{type.label}</button>
+                  <button onClick={() => toggleType(type.id)} style={{
+                    padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    border: selectedTypes.includes(type.id) ? '2px solid #00d0ca' : '2px solid #c0ede9',
+                    background: selectedTypes.includes(type.id) ? '#00d0ca' : 'white',
+                    color: selectedTypes.includes(type.id) ? 'white' : '#00a89e',
+                    transition: 'all 0.2s', whiteSpace: 'nowrap',
+                  }}>{type.label}</button>
 
                   {type.hasParts && selectedTypes.includes(type.id) && (
                     <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
@@ -249,11 +264,8 @@ function LogContent() {
                     {type.options.map(opt => (
                       <div key={opt.key}>
                         <label style={{ fontSize: 11, color: '#00a89e', fontWeight: 600, display: 'block', marginBottom: 4 }}>{opt.label}</label>
-                        <select
-                          value={(selectedOptions[type.id] ?? {})[opt.key] ?? ''}
-                          onChange={e => setOption(type.id, opt.key, e.target.value)}
-                          style={{ padding: '6px 10px', borderRadius: 10, border: '1.5px solid #c0ede9', fontSize: 12, background: 'white', color: '#1a1a2e', outline: 'none' }}
-                        >
+                        <select value={(selectedOptions[type.id] ?? {})[opt.key] ?? ''} onChange={e => setOption(type.id, opt.key, e.target.value)}
+                          style={{ padding: '6px 10px', borderRadius: 10, border: '1.5px solid #c0ede9', fontSize: 12, background: 'white', color: '#1a1a2e', outline: 'none' }}>
                           <option value="">選択</option>
                           {opt.choices.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
@@ -281,6 +293,26 @@ function LogContent() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Body */}
+        <div style={{ background: 'white', borderRadius: 20, padding: 20, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <div style={{ width: 4, height: 20, background: '#a78bfa', borderRadius: 4 }}></div>
+            <h2 style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', letterSpacing: 1.5, textTransform: 'uppercase' }}>Body</h2>
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: 12, color: '#7c3aed', fontWeight: 600, display: 'block', marginBottom: 4 }}>体重（kg）</label>
+              <input type="number" value={weight} onChange={e => setWeight(Math.max(0, parseFloat(e.target.value) || 0).toString())} placeholder="例: 55.5" min="0"
+                style={{ ...inputStyle, border: '1.5px solid #ddd6fe' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: 12, color: '#7c3aed', fontWeight: 600, display: 'block', marginBottom: 4 }}>体脂肪率（%）</label>
+              <input type="number" value={bodyFat} onChange={e => setBodyFat(Math.max(0, parseFloat(e.target.value) || 0).toString())} placeholder="例: 22.5" min="0"
+                style={{ ...inputStyle, border: '1.5px solid #ddd6fe' }} />
+            </div>
+          </div>
         </div>
 
         {/* Alcohol */}

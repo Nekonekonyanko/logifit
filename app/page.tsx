@@ -54,19 +54,22 @@ export default function DailyLogApp() {
   useEffect(() => {
     const fetchLogs = async () => {
       const { data, error } = await supabase
-        .from('logs')
-        .select('*')
-        .gte('date', `${year}-${month + 1}-1`)
-        .lte('date', `${year}-${month + 1}-${daysInMonth}`);
+  .from('logs')
+  .select('*');
 
       if (!error && data) {
         const loaded: Record<string, any> = {};
-        data.forEach((row: any) => {
-          loaded[row.date] = {
+        data.filter((row: any) => {
+  const [y, m] = row.date.split('-').map(Number);
+  return y === year && m === month + 1;
+}).forEach((row: any) => {
+  loaded[row.date] = {
             gym: row.gym,
             workoutTime: row.workout_time,
             programming: { time: row.prog_time, content: row.prog_content, memo: row.prog_memo },
-            english: { time: row.eng_time },
+            english: { time: row.eng_time, content: row.eng_content },
+weight: row.weight,
+bodyFat: row.body_fat,
             mood: row.mood,
             alcohol: row.alcohol,
           };
@@ -106,14 +109,18 @@ export default function DailyLogApp() {
     setAiLoading(true);
     setAiComment('');
     try {
-      const summary = `
+      const HEIGHT = 159;
+const bmi = log.weight ? (log.weight / ((HEIGHT / 100) ** 2)).toFixed(1) : null;
+
+const summary = `
 日付: ${date}
 気分: ${log.mood ?? 'なし'}
 プログラミング学習: ${log.programming?.time ?? 0}時間、内容: ${log.programming?.content ?? 'なし'}
-英語学習: ${log.english?.time ?? 0}時間
+英語学習: ${log.english?.time ?? 0}時間、内容: ${log.english?.content ?? 'なし'}
 ジム: ${log.gym ? '完了' : '未完了'}、運動時間: ${log.workoutTime ?? 'なし'}
 お酒: ${log.alcohol ? '飲んだ' : '飲まなかった'}
-      `.trim();
+身長: ${HEIGHT}cm、体重: ${log.weight ?? 'なし'}kg、体脂肪率: ${log.bodyFat ?? 'なし'}%、BMI: ${bmi ?? '計算不可'}
+`.trim();
 
       const res = await fetch('/api/ai-comment', {
         method: 'POST',

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const HEIGHT = 159;
+
 export async function POST(req: NextRequest) {
   const { summary } = await req.json();
 
@@ -15,7 +17,20 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: 'system',
-            content: 'あなたは毎日の学習・運動記録に対して、温かく励ましてくれるコーチです。記録を見て、具体的な評価と短い励ましのコメントを2〜3文で日本語で返してください。絵文字を1〜2個使ってOKです。',
+            content: `あなたはパーソナルトレーナーとエンジニア育成の両方のプロフェッショナルです。身長は${HEIGHT}cmで固定されています。
+
+ユーザーの記録データをもとに、以下の2つの視点から総評してください：
+
+【トレーナーとして】
+運動の種類・頻度・時間、体重・体脂肪率・BMIから、身体的なコンディションや習慣の傾向を読み取り、具体的なフィードバックをしてください。BMIが提供されている場合は必ず言及してください。
+
+【エンジニア育成のプロとして】
+学習時間・内容・継続性から、成長の軌跡と次のステップを具体的に示してください。
+
+ルール：
+- データに基づいた具体的なコメントのみ。根拠のない推測は言わない
+- 上から目線にならず、対等なプロとして話す
+- 2〜3文で簡潔に。日本語で。絵文字なし`,
           },
           {
             role: 'user',
@@ -27,7 +42,6 @@ export async function POST(req: NextRequest) {
     });
 
     const data = await res.json();
-    console.log('Groq response:', JSON.stringify(data));
     const text = data.choices?.[0]?.message?.content ?? 'コメントを取得できませんでした。';
     return NextResponse.json({ comment: text });
   } catch (error) {
