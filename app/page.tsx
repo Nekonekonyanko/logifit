@@ -128,16 +128,14 @@ export default function DailyLogApp() {
     setAiLoading(false);
   };
 
-  const handleDateClick = (key: string) => {
-    if (isMobile && isAdmin) {
-      router.push(`/log?date=${key}`);
-      return;
-    }
-    setSelectedDate(key);
-    const log = logs[key];
-    if (log) generateAiComment(log, key);
-    else setAiComment('');
-  };
+   const handleDateClick = (key: string) => {
+  setSelectedDate(key);
+
+  const log = logs[key];
+
+  if (log) generateAiComment(log, key);
+  else setAiComment('');
+};
 
   const selectedLog = selectedDate ? logs[selectedDate] : null;
   const selectedDayOfWeek = selectedDate
