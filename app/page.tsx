@@ -6,7 +6,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { ChevronLeft, ChevronRight, Dumbbell, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-const ADMIN_EMAIL = "chica.t.1589@gmail.com";
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? '';
 
 const monthNames = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
                     "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
