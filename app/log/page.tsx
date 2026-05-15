@@ -138,13 +138,20 @@ function LogContent() {
       weight: weight ? parseFloat(weight) : null,
       body_fat: bodyFat ? parseFloat(bodyFat) : null,
     };
-    const { error } = await supabase.from('logs').upsert(data, { onConflict: 'date' });
-    if (error) {
-      alert('保存に失敗しました: ' + error.message);
-    } else {
-      alert('保存したよ！');
-    }
-    setSaving(false);
+
+    const res = await fetch('/api/log', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(data),
+});
+const result = await res.json();
+if (result.error) {
+  alert('保存に失敗しました: ' + result.error);
+} else {
+  alert('保存したよ！');
+}
+setSaving(false);
+
   };
 
   const inputStyle: React.CSSProperties = {
