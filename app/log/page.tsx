@@ -151,7 +151,6 @@ if (result.error) {
   alert('保存したよ！');
 }
 setSaving(false);
-
   };
 
   const inputStyle: React.CSSProperties = {
