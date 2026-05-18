@@ -22,7 +22,7 @@ const moods = [
   },
 ];
 
-const bodyParts = ['Legs', 'Back', 'Chest', 'Shoulders', 'Arms', 'Core'];
+const bodyParts = ['Legs', 'Glutes', 'Back', 'Chest', 'Shoulders', 'Arms', 'Core'];
 
 const workoutTypes = [
   { id: 'workout', label: 'Workout', hasParts: true },
@@ -32,13 +32,13 @@ const workoutTypes = [
   { id: 'walking', label: 'ウォーキング', hasParts: false,
     options: [
       { label: '傾斜', key: 'incline', choices: ['0度', '3度', '5度', '7度', '10度', '12度', '15度'] },
-      { label: '時間', key: 'duration', choices: ['10分', '20分', '30分', '40分', '50分', '60分', '90分'] },
-      { label: '距離', key: 'distance', choices: ['1km', '2km', '3km', '4km', '5km', '6km', '7km', '8km', '10km'] },
+      { label: '時間', key: 'duration', choices: ['10分','15分', '20分', '30分', '40分', '50分', '60分', '90分'] },
+      { label: '距離', key: 'distance', choices: ['1km', '2km', '3km', '4km', '5km', ] },
     ]},
   { id: 'running', label: 'ランニング', hasParts: false,
     options: [
       { label: '時間', key: 'duration', choices: ['10分', '20分', '30分', '40分', '50分', '60分', '90分'] },
-      { label: '距離', key: 'distance', choices: ['1km', '2km', '3km', '4km', '5km', '6km', '7km', '8km', '10km'] },
+      { label: '距離', key: 'distance', choices: ['1km',  '1.5km','2km', '3km', '4km', '5km', '6km', '7km', '8km', '10km'] },
     ]},
   { id: 'yoga', label: 'ヨガ', hasParts: false,
     options: [{ label: '時間', key: 'duration', choices: ['10分', '20分', '30分', '40分', '50分', '60分', '90分'] }]},
