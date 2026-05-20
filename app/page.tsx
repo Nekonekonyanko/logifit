@@ -152,7 +152,7 @@ const summary = `
   const cellHeight = isMobile ? 52 : 110;
   const headerFontSize = isMobile ? 28 : 56;
   const padding = isMobile ? '16px' : '32px';
-  const today = new Date(new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }));
+  const today = new Date();
 
   return (
     <div style={{ background: '#daedf6', minHeight: '100vh', fontFamily: "'DM Sans', sans-serif" }}>
