@@ -31,7 +31,7 @@ export default function DailyLogApp() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.email === ADMIN_EMAIL;
 
-  const [curr, setCurr] = useState(new Date());
+  const [curr, setCurr] = useState(() => new Date());
   const [logs, setLogs] = useState<Record<string, any>>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [aiComment, setAiComment] = useState<string>('');
